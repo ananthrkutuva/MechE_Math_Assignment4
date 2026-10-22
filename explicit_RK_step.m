@@ -21,7 +21,22 @@ function [XB, num_evals] = explicit_RK_step(rate_func_in,t,XA,h,BT_struct)
     s = length(BT_struct.B);
     K = zeros(m, s);
 
-    
+    %fill in K one column at a time, column i is k_i
+    %A is lower triangular for an explicit method, so row i of A only has
+    %weights for k_1 to k_{i-1}. the columns of K that haven't been
+    %filled in yet are still zero so they don't add anything to the sum
+    for i = 1:s
+        %sum of a_ij*k_j for j = 1 to i-1 (eqn 5), as a dot product
+        sum_val1 = K*(BT_struct.A(i,:)');
 
+        %slope at the ith intermediate guess
+        K(:,i) = rate_func_in(t+BT_struct.C(i)*h, XA+h*sum_val1);
+    end
 
+    %weighted average of all the k's using B (eqn 6)
+    sum_val2 = K*(BT_struct.B');
+    XB = XA + h*sum_val2;
+
+    %rate_func_in gets called once per stage (once per column of K)
+    num_evals = s;
 end
